@@ -3,7 +3,7 @@ package nz.ac.ara.bd.eyemaze.model;
 import java.util.*;
 
 public class Level {
-    Square[][] gridLevel;
+    public Square[][] gridLevel;
     List<Position> goalList = new ArrayList<>();
     Position currentGoalSquare;
     int goalCompletedCount = 0;
