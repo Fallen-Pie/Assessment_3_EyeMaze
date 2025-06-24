@@ -8,4 +8,12 @@
     <string name="second_fragment_label">Second Fragment</string>
     <string name="next">Next</string>
     <string name="previous">Previous</string>
+    <!-- Win/Loss Messages -->
+    <string name="goodMove">Good Move</string>
+    <string name="differentShapeColour">Cannot Move to different Shape and Colour</string>
+    <string name="backwardsMove">Cannot Move backwards</string>
+    <string name="moveOverBlank">Cannot Move over empty Square</string>
+    <string name="moveDiagonally">Cannot Move Diagonally</string>
+    <!-- Goal Message -->
+    <string name="goalMessage">Goals: %1$d/%2$d</string>
 </resources>
