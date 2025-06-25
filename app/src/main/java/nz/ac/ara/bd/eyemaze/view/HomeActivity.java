@@ -38,9 +38,10 @@ public class HomeActivity extends AppCompatActivity {
 
     public void launchSecondActivity(View view) {
         Log.d(LOG_TAG, "Button clicked!");
-
         Intent intent = new Intent(this, GameActivity.class);
-
+        Bundle data = new Bundle();
+        data.putInt("LEVEL", 1);
+        intent.putExtras(data);
         GameActivityLauncher.launch(intent);
     }
 }

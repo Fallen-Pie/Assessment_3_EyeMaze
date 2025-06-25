@@ -8,27 +8,15 @@
     tools:context=".view.GameActivity">
 
     <TextView
-        android:id="@+id/textView"
+        android:id="@+id/levelText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="TextView"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.498"
+        app:layout_constraintHorizontal_bias="0.287"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.167" />
-
-    <LinearLayout
-        android:id="@+id/LinearLayout"
-        android:layout_width="411dp"
-        android:layout_height="340dp"
-        android:orientation="vertical"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.627" />
+        app:layout_constraintVertical_bias="0.067" />
 
     <TextView
         android:id="@+id/messageText"
@@ -43,13 +31,26 @@
 
     <TextView
         android:id="@+id/goalText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="122dp"
+        android:layout_height="17dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.898"
+        app:layout_constraintHorizontal_bias="0.737"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.068" />
+        app:layout_constraintVertical_bias="0.07" />
+
+    <LinearLayout
+        android:id="@+id/LinearLayout"
+        android:layout_width="409dp"
+        android:layout_height="662dp"
+        android:layout_marginStart="1dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="1dp"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/goalText"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
