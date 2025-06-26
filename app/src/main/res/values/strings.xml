@@ -16,6 +16,7 @@
     <string name="moveDiagonally">Cannot Move Diagonally</string>
     <!-- Goal Message -->
     <string name="goalMessage">Goals: %1$d/%2$d</string>
+    <string name="moveMessage">Moves: %1$d</string>
     <string name="dialogWinGame">You have completed all the goals</string>
     <string name="dialogLoseGame">No Legal Moves</string>
     <string name="continueGame">Next Level</string>

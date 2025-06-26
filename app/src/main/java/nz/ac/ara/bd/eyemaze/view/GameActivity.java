@@ -1,20 +1,18 @@
 package nz.ac.ara.bd.eyemaze.view;
 
+import static android.graphics.PorterDuff.Mode.SRC_ATOP;
+import static android.graphics.PorterDuff.Mode.SRC_OVER;
 import static java.lang.Integer.parseInt;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.graphics.BlendMode;
-import android.graphics.BlendModeColorFilter;
-import android.graphics.ColorFilter;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.PorterDuff;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
-import android.widget.Button;
-import android.widget.GridView;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -25,7 +23,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import java.util.ArrayList;
+import java.util.Objects;
 
 import nz.ac.ara.bd.eyemaze.R;
 import nz.ac.ara.bd.eyemaze.model.BlankSquare;
@@ -43,6 +41,7 @@ public class GameActivity extends AppCompatActivity {
     ImageButton previousButton;
     boolean previousGoal = false;
     int goalTotal;
+    int totalMoves;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,69 +66,61 @@ public class GameActivity extends AppCompatActivity {
                 setColourShape(new_button, row, column);
                 new_button.setTag(row + "_" + column);
                 //new_button.getLayoutParams().width = (552/game.getLevelWidth());
-                if (game.hasGoalAt(row, column)) {
-                    new_button.setColorFilter(R.color.green);
+                /*if (game.hasGoalAt(row, column)) {
+                    //new_button.setColorFilter(R.color.green);
                 } else if ((game.getEyeballColumn() == column && game.getEyeballRow() == row)) {
-                    new_button.setColorFilter(R.color.orange);
-                }
+                    //new_button.setColorFilter(R.color.orange);
+                }*/
                 new_button.setOnClickListener(newOnClickListener);
                 ll_row.addView(new_button);
             }
         }
     }
 
-
-
     private void setGameState() {
         Bundle data = getIntent().getExtras();
         assert data != null;
         createGame(data.getInt("LEVEL"));
         goalTotal = game.getGoalCount();
-        setGoalText();
+        setText();
     }
 
     private void setColourShape(ImageButton newButton, int row, int column) {
-        Log.d(LOG_TAG, row + " " + column + " " + game.getShapeAt(row, column) + " " + game.getColorAt(row, column));
-        switch(game.getShapeAt(row, column)) {
-            case DIAMOND:
-                newButton.setImageResource(R.drawable.diamond);
-                break;
-            case CROSS:
-                newButton.setImageResource(R.drawable.cross);
-                break;
-            case STAR:
-                newButton.setImageResource(R.drawable.star);
-                break;
-            case FLOWER:
-                newButton.setImageResource(R.drawable.flower);
-                break;
-            case LIGHTNING:
-                newButton.setImageResource(R.drawable.lightning);
-                break;
+        //Log.d(LOG_TAG, row + " " + column + " " + game.getShapeAt(row, column) + " " + game.getColorAt(row, column));
+        Bitmap bitmap = null;
+        int colour;
+        bitmap = switch (game.getShapeAt(row, column)) {
+            case DIAMOND -> BitmapFactory.decodeResource(getResources(), R.drawable.diamond);
+            case CROSS -> BitmapFactory.decodeResource(getResources(), R.drawable.cross);
+            case STAR -> BitmapFactory.decodeResource(getResources(), R.drawable.star);
+            case FLOWER -> BitmapFactory.decodeResource(getResources(), R.drawable.flower);
+            default -> BitmapFactory.decodeResource(getResources(), R.drawable.lightning);
+        };
+        colour = switch (game.getColorAt(row, column)) {
+            case BLUE -> R.color.blue;
+            case RED -> R.color.red;
+            case YELLOW -> R.color.yellow;
+            case GREEN -> R.color.green;
+            default -> R.color.purple_700;
+        };
+        /*int white = R.color.white;
+        int[] pixels = new int[bitmap.getWidth() * bitmap.getHeight()];
+        bitmap.getPixels(pixels, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
+        Bitmap bmOut = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Objects.requireNonNull(bitmap.getConfig()));
+        int pixel;
+        for (int y = 0; y < bitmap.getHeight(); ++y) {
+            for (int x = 0; x < bitmap.getWidth(); ++x) {
+                // get current index in 2D-matrix
+                int index = y * bitmap.getWidth() + x;
+                pixel = pixels[index];
+                if(pixel == -1){
+                    pixels[index] = colour;
+                }
+            }
         }
-        newButton.setBackgroundColor(0);
-        /*switch(game.getColorAt(row, column)) {
-            case BLUE:
-                newButton.getDrawable().setColorFilter(getResources().getColor(R.color.blue));
-                Log.d(LOG_TAG, "Set Blue");
-                break;
-            case RED:
-                newButton.setColorFilter(R.color.red);
-                Log.d(LOG_TAG, "Set Red");
-                break;
-            case YELLOW:
-                newButton.setColorFilter(R.color.yellow);
-                Log.d(LOG_TAG, "Set Yellow");
-                break;
-            case GREEN:
-                newButton.setColorFilter(R.color.green);
-                Log.d(LOG_TAG, "Set Green");
-                break;
-            case PURPLE:
-                newButton.setColorFilter(R.color.purple_700);
-                Log.d(LOG_TAG, "Set Purple");
-                break;
-        }*/
+        bmOut.setPixels(pixels, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());*/
+        newButton.setImageBitmap(bitmap);
+        //newButton.setBackgroundColor(white);
     }
 
     View.OnClickListener newOnClickListener = new View.OnClickListener() {
@@ -141,7 +132,7 @@ public class GameActivity extends AppCompatActivity {
             if (((game.getEyeballColumn() == newColumn && game.getEyeballRow() == newRow)) && !movingPlayer) {
                 movingPlayer = true;
                 previousButton = (ImageButton) view;
-                previousButton.setColorFilter(R.color.highlight, PorterDuff.Mode.DARKEN);
+                //previousButton.setColorFilter(R.color.highlight, PorterDuff.Mode.DARKEN);
             } else if (!((game.getEyeballColumn() == newColumn && game.getEyeballRow() == newRow)) && movingPlayer) {
                 if (!game.isDirectionOK(newRow, newColumn)) {
                     setMessage(game.checkDirectionMessage(newRow, newColumn));
@@ -184,7 +175,8 @@ public class GameActivity extends AppCompatActivity {
         if (game.getCompletedGoalCount() == goalTotal) {
             onWinDialog();
         }
-        setGoalText();
+        totalMoves += 1;
+        setText();
         setMessage(Message.OK);
         movingPlayer = false;
         previousButton.setColorFilter(getColor(R.color.purple_700));
@@ -223,9 +215,11 @@ public class GameActivity extends AppCompatActivity {
         alertDialog.show();
     }
 
-    private void setGoalText() {
+    private void setText() {
         TextView goalBox = findViewById(R.id.goalText);
         goalBox.setText(getString(R.string.goalMessage, game.getCompletedGoalCount(), goalTotal));
+        TextView moveBox = findViewById(R.id.moveText);
+        moveBox.setText(getString(R.string.moveMessage, totalMoves));
     }
     private void setMessage(Message message) {
         TextView messageBox = findViewById(R.id.messageText);
@@ -333,3 +327,4 @@ public class GameActivity extends AppCompatActivity {
         game.addEyeball(3, 1, Direction.UP);
     }
 }
+
