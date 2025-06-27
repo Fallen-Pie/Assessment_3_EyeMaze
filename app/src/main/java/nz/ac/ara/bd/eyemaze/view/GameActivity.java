@@ -1,19 +1,26 @@
 package nz.ac.ara.bd.eyemaze.view;
 
-import static android.graphics.PorterDuff.Mode.SRC_ATOP;
-import static android.graphics.PorterDuff.Mode.SRC_OVER;
+import static android.media.AudioManager.ADJUST_MUTE;
 import static java.lang.Integer.parseInt;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LayerDrawable;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -23,7 +30,11 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import java.util.Objects;
+import com.google.android.material.button.MaterialButton;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ResourceBundle;
 
 import nz.ac.ara.bd.eyemaze.R;
 import nz.ac.ara.bd.eyemaze.model.BlankSquare;
@@ -32,14 +43,19 @@ import nz.ac.ara.bd.eyemaze.model.Direction;
 import nz.ac.ara.bd.eyemaze.model.Game;
 import nz.ac.ara.bd.eyemaze.model.Message;
 import nz.ac.ara.bd.eyemaze.model.PlayableSquare;
+import nz.ac.ara.bd.eyemaze.model.Position;
 import nz.ac.ara.bd.eyemaze.model.Shape;
 
 public class GameActivity extends AppCompatActivity {
     private static final String LOG_TAG = GameActivity.class.getSimpleName();
     Game game = new Game();
+    MediaPlayer mediaPlayer;
+    AudioManager audioControl;
+    boolean muted = false;
     boolean movingPlayer = false;
     ImageButton previousButton;
-    boolean previousGoal = false;
+    Position previousLocation;
+    Position previousGoal;
     int goalTotal;
     int totalMoves;
 
@@ -63,19 +79,64 @@ public class GameActivity extends AppCompatActivity {
             ll_vert.addView(ll_row);
             for (int column = 0; column < game.getLevelWidth(); column++) {
                 ImageButton new_button = new ImageButton(this);
-                setColourShape(new_button, row, column);
                 new_button.setTag(row + "_" + column);
+                ll_row.addView(new_button);
                 //new_button.getLayoutParams().width = (552/game.getLevelWidth());
                 /*if (game.hasGoalAt(row, column)) {
-                    //new_button.setColorFilter(R.color.green);
-                } else if ((game.getEyeballColumn() == column && game.getEyeballRow() == row)) {
-                    //new_button.setColorFilter(R.color.orange);
-                }*/
-                new_button.setOnClickListener(newOnClickListener);
-                ll_row.addView(new_button);
+                    new_button.setColorFilter(getColor(R.color.green), PorterDuff.Mode.MULTIPLY );
+                } else */if ((game.getEyeballColumn() == column && game.getEyeballRow() == row)) {
+                    setColourShape(new_button, row, column, true);
+                } else {
+                    setColourShape(new_button, row, column, false);
+                }
+                new_button.setOnClickListener(gameClickListener);
             }
         }
+        findViewById(R.id.resetButton).setOnClickListener(resetClickListener);
+        findViewById(R.id.pauseButton).setOnClickListener(pauseClickListener);
+        findViewById(R.id.muteButton).setOnClickListener(muteClickListener);
+        audioControl = (AudioManager)getSystemService(AUDIO_SERVICE);
+        audioControl.adjustVolume(AudioManager.ADJUST_UNMUTE, AudioManager.FLAG_PLAY_SOUND);
     }
+
+    View.OnClickListener resetClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            recreate();
+        }
+    };
+
+    View.OnClickListener muteClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            MaterialButton thisButton = (MaterialButton) view;
+            audioControl.adjustVolume(AudioManager.ADJUST_TOGGLE_MUTE, AudioManager.FLAG_PLAY_SOUND);
+            if (!muted) {
+                thisButton.setIconResource(R.drawable.baseline_volume_off_24);
+                muted = true;
+            } else {
+                thisButton.setIconResource(R.drawable.baseline_volume_up_24);
+                muted = false;
+            }
+        }
+    };
+
+
+    View.OnClickListener pauseClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(GameActivity.this);
+            builder.setMessage(R.string.pauseGame)
+                    .setNegativeButton(R.string.resumeGame, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            dialog.dismiss();
+                        }
+                    });
+            AlertDialog alertDialog = builder.create();
+            alertDialog.setCancelable(false);
+            alertDialog.show();
+        }
+    };
 
     private void setGameState() {
         Bundle data = getIntent().getExtras();
@@ -85,45 +146,57 @@ public class GameActivity extends AppCompatActivity {
         setText();
     }
 
-    private void setColourShape(ImageButton newButton, int row, int column) {
-        //Log.d(LOG_TAG, row + " " + column + " " + game.getShapeAt(row, column) + " " + game.getColorAt(row, column));
-        Bitmap bitmap = null;
-        int colour;
-        bitmap = switch (game.getShapeAt(row, column)) {
-            case DIAMOND -> BitmapFactory.decodeResource(getResources(), R.drawable.diamond);
-            case CROSS -> BitmapFactory.decodeResource(getResources(), R.drawable.cross);
-            case STAR -> BitmapFactory.decodeResource(getResources(), R.drawable.star);
-            case FLOWER -> BitmapFactory.decodeResource(getResources(), R.drawable.flower);
-            default -> BitmapFactory.decodeResource(getResources(), R.drawable.lightning);
+    @SuppressLint("UseCompatLoadingForDrawables")
+    private void setColourShape(ImageButton newButton, int row, int column ,boolean player) {
+        int white = getColor(R.color.white);
+        Drawable shape = switch (game.getShapeAt(row, column)) {
+            case DIAMOND -> getDrawable(R.drawable.diamond);
+            case CROSS -> getDrawable(R.drawable.cross);
+            case STAR -> getDrawable(R.drawable.star);
+            case FLOWER -> getDrawable(R.drawable.flower);
+            case LIGHTNING -> getDrawable(R.drawable.lightning);
+            default -> getDrawable(R.drawable.blank);
         };
-        colour = switch (game.getColorAt(row, column)) {
-            case BLUE -> R.color.blue;
-            case RED -> R.color.red;
-            case YELLOW -> R.color.yellow;
-            case GREEN -> R.color.green;
-            default -> R.color.purple_700;
+        Log.d(LOG_TAG, "Button clicked!" + game.getColorAt(row, column));
+        int colour = switch (game.getColorAt(row, column)) {
+            case BLUE -> getColor(R.color.blue);
+            case RED -> getColor(R.color.red);
+            case YELLOW -> getColor(R.color.yellow);
+            case GREEN -> getColor(R.color.green);
+            case PURPLE -> getColor(R.color.purple_700);
+            default -> white;
         };
-        /*int white = R.color.white;
-        int[] pixels = new int[bitmap.getWidth() * bitmap.getHeight()];
-        bitmap.getPixels(pixels, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
-        Bitmap bmOut = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Objects.requireNonNull(bitmap.getConfig()));
-        int pixel;
-        for (int y = 0; y < bitmap.getHeight(); ++y) {
-            for (int x = 0; x < bitmap.getWidth(); ++x) {
-                // get current index in 2D-matrix
-                int index = y * bitmap.getWidth() + x;
-                pixel = pixels[index];
-                if(pixel == -1){
-                    pixels[index] = colour;
-                }
-            }
-        }
-        bmOut.setPixels(pixels, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());*/
+        assert shape != null;
+        shape.setColorFilter(colour, PorterDuff.Mode.MULTIPLY);
+        List<Drawable> drawableList = new ArrayList<>();
+        drawableList.add(shape);
+        if (player) drawableList.add(playerCharacter());
+        LayerDrawable finalDrawable = new LayerDrawable(drawableList.toArray(new Drawable[0]));
+        Bitmap bitmap = Bitmap.createBitmap(finalDrawable.getIntrinsicWidth(), finalDrawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        finalDrawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        finalDrawable.draw(canvas);
         newButton.setImageBitmap(bitmap);
-        //newButton.setBackgroundColor(white);
+        newButton.setBackgroundColor(white);
     }
 
-    View.OnClickListener newOnClickListener = new View.OnClickListener() {
+    @SuppressLint("UseCompatLoadingForDrawables")
+    private Drawable playerCharacter() {
+        int rotation = switch (game.getEyeballDirection()) {
+            case UP -> 0;
+            case DOWN -> 180;
+            case LEFT -> 270;
+            case RIGHT -> 90;
+        };
+        Bitmap bmpOriginal = BitmapFactory.decodeResource(this.getResources(), R.drawable.player);
+        Bitmap bmResult = Bitmap.createBitmap(bmpOriginal.getWidth(), bmpOriginal.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas tempCanvas = new Canvas(bmResult);
+        tempCanvas.rotate(rotation, (float) bmpOriginal.getWidth()/2, (float) bmpOriginal.getHeight()/2);
+        tempCanvas.drawBitmap(bmpOriginal, 0, 0, null);
+        return new BitmapDrawable(getResources(), bmResult);
+    }
+
+    View.OnClickListener gameClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
             String[] temp = ((String) view.getTag()).split("_");
@@ -132,20 +205,24 @@ public class GameActivity extends AppCompatActivity {
             if (((game.getEyeballColumn() == newColumn && game.getEyeballRow() == newRow)) && !movingPlayer) {
                 movingPlayer = true;
                 previousButton = (ImageButton) view;
-                //previousButton.setColorFilter(R.color.highlight, PorterDuff.Mode.DARKEN);
+                previousLocation = new Position(newRow, newColumn);
+                previousButton.setColorFilter(R.color.highlight, PorterDuff.Mode.LIGHTEN);
             } else if (!((game.getEyeballColumn() == newColumn && game.getEyeballRow() == newRow)) && movingPlayer) {
                 if (!game.isDirectionOK(newRow, newColumn)) {
+                    playAudio(R.raw.error);
                     setMessage(game.checkDirectionMessage(newRow, newColumn));
                 } else if (!game.hasBlankFreePathTo(newRow, newColumn)) {
+                    playAudio(R.raw.error);
                     setMessage(game.checkMessageForBlankOnPathTo(newRow, newColumn));
                 } else if (!game.canMoveToSquareColor(newRow, newColumn)) {
+                    playAudio(R.raw.error);
                     setMessage(game.messageIfMovingTo(newRow, newColumn));
                 } else {
-                    game.moveTo(newRow,newColumn);
+                    setColourShape(previousButton, previousLocation.getRow(), previousLocation.getColumn() ,false);
+                    processesMove(newRow, newColumn);
+                    setColourShape((ImageButton) view, newRow, newColumn ,true);
                     if (!hasLegalMoves()) {
                         onLoseDialog();
-                    } else {
-                        processesMove(newRow, newColumn);
                     }
                 }
             }
@@ -166,20 +243,24 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void processesMove(int newRow, int newColumn) {
+        boolean movedToGoal = false;
         if (game.hasGoalAt(newRow, newColumn) ) {
-            previousGoal = true;
-        } else if (previousGoal) {
-            previousButton.setColorFilter(getColor(R.color.black));
-            previousGoal = false;
+            previousGoal = new Position(newRow, newColumn);
+            movedToGoal = true;
+        }
+        game.moveTo(newRow,newColumn);
+        if (previousGoal != null && !movedToGoal) {
+            setColourShape(previousButton, previousGoal.getRow(), previousGoal.getColumn(), false);
+            previousGoal = null;
         }
         if (game.getCompletedGoalCount() == goalTotal) {
+            playAudio(R.raw.success);
             onWinDialog();
         }
         totalMoves += 1;
         setText();
         setMessage(Message.OK);
         movingPlayer = false;
-        previousButton.setColorFilter(getColor(R.color.purple_700));
     }
 
     public void onWinDialog() {
@@ -213,6 +294,12 @@ public class GameActivity extends AppCompatActivity {
                 });
         AlertDialog alertDialog = builder.create();
         alertDialog.show();
+    }
+
+    private void playAudio(int audioTrack) {
+        Log.d(LOG_TAG, "Play Audio!" + audioTrack);
+        mediaPlayer = MediaPlayer.create(this, audioTrack);
+        mediaPlayer.start();
     }
 
     private void setText() {
@@ -261,7 +348,6 @@ public class GameActivity extends AppCompatActivity {
                 levelOne(game);
                 break;
         }
-
     }
 
     private static void levelOne(Game game) {

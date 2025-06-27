@@ -22,4 +22,6 @@
     <string name="continueGame">Next Level</string>
     <string name="restartGame">Restart Level</string>
     <string name="levelMessage">Level: %1$d</string>
+    <string name="pauseGame">Game is Paused</string>
+    <string name="resumeGame">Resume Game</string>
 </resources>
