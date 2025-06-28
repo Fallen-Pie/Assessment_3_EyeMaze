@@ -1,6 +1,5 @@
 package nz.ac.ara.bd.eyemaze.view;
 
-import static android.media.AudioManager.ADJUST_MUTE;
 import static java.lang.Integer.parseInt;
 
 import android.annotation.SuppressLint;
@@ -20,7 +19,6 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -34,7 +32,6 @@ import com.google.android.material.button.MaterialButton;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ResourceBundle;
 
 import nz.ac.ara.bd.eyemaze.R;
 import nz.ac.ara.bd.eyemaze.model.BlankSquare;
@@ -81,14 +78,7 @@ public class GameActivity extends AppCompatActivity {
                 ImageButton new_button = new ImageButton(this);
                 new_button.setTag(row + "_" + column);
                 ll_row.addView(new_button);
-                //new_button.getLayoutParams().width = (552/game.getLevelWidth());
-                /*if (game.hasGoalAt(row, column)) {
-                    new_button.setColorFilter(getColor(R.color.green), PorterDuff.Mode.MULTIPLY );
-                } else */if ((game.getEyeballColumn() == column && game.getEyeballRow() == row)) {
-                    setColourShape(new_button, row, column, true);
-                } else {
-                    setColourShape(new_button, row, column, false);
-                }
+                setColourShape(new_button, row, column, game.getEyeballColumn() == column && game.getEyeballRow() == row);
                 new_button.setOnClickListener(gameClickListener);
             }
         }
@@ -171,6 +161,7 @@ public class GameActivity extends AppCompatActivity {
         List<Drawable> drawableList = new ArrayList<>();
         drawableList.add(shape);
         if (player) drawableList.add(playerCharacter());
+        else if (game.hasGoalAt(row, column)) drawableList.add(getDrawable(R.drawable.goal));
         LayerDrawable finalDrawable = new LayerDrawable(drawableList.toArray(new Drawable[0]));
         Bitmap bitmap = Bitmap.createBitmap(finalDrawable.getIntrinsicWidth(), finalDrawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
@@ -193,7 +184,10 @@ public class GameActivity extends AppCompatActivity {
         Canvas tempCanvas = new Canvas(bmResult);
         tempCanvas.rotate(rotation, (float) bmpOriginal.getWidth()/2, (float) bmpOriginal.getHeight()/2);
         tempCanvas.drawBitmap(bmpOriginal, 0, 0, null);
-        return new BitmapDrawable(getResources(), bmResult);
+        Drawable finalDrawable = new BitmapDrawable(getResources(), bmResult);
+        if (!movingPlayer) finalDrawable.setColorFilter(getColor(R.color.orange), PorterDuff.Mode.MULTIPLY);
+        else finalDrawable.setColorFilter(getColor(R.color.highlight), PorterDuff.Mode.MULTIPLY);
+        return finalDrawable;
     }
 
     View.OnClickListener gameClickListener = new View.OnClickListener() {
@@ -206,7 +200,7 @@ public class GameActivity extends AppCompatActivity {
                 movingPlayer = true;
                 previousButton = (ImageButton) view;
                 previousLocation = new Position(newRow, newColumn);
-                previousButton.setColorFilter(R.color.highlight, PorterDuff.Mode.LIGHTEN);
+                setColourShape(previousButton, previousLocation.getRow(), previousLocation.getColumn() ,true);
             } else if (!((game.getEyeballColumn() == newColumn && game.getEyeballRow() == newRow)) && movingPlayer) {
                 if (!game.isDirectionOK(newRow, newColumn)) {
                     playAudio(R.raw.error);
