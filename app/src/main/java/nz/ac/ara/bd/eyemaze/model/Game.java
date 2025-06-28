@@ -3,8 +3,8 @@ package nz.ac.ara.bd.eyemaze.model;
 import java.util.*;
 
 public class Game implements IGoalHolder, ILevelHolder, IMoving, ISquareHolder, IEyeballHolder {
-    List<Level> levelList = new ArrayList<>();
-    int currentLevel = 0;
+    private final List<Level> levelList = new ArrayList<>();
+    private int currentLevel = 0;
 
     @Override
     public void addGoal(int row, int column) {

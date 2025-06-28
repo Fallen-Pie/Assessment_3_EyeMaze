@@ -147,7 +147,6 @@ public class GameActivity extends AppCompatActivity {
             case LIGHTNING -> getDrawable(R.drawable.lightning);
             default -> getDrawable(R.drawable.blank);
         };
-        Log.d(LOG_TAG, "Button clicked!" + game.getColorAt(row, column));
         int colour = switch (game.getColorAt(row, column)) {
             case BLUE -> getColor(R.color.blue);
             case RED -> getColor(R.color.red);
