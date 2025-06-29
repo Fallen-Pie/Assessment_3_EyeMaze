@@ -66,18 +66,18 @@ public class GameActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
-        LinearLayout ll_vert = findViewById(R.id.LinearLayout);
-        ll_vert.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout verticalSquares = findViewById(R.id.LinearLayout);
+        verticalSquares.setOrientation(LinearLayout.VERTICAL);
         setGameState();
         for (int row = 0; row < game.getLevelHeight(); row++) {
-            LinearLayout ll_row = new LinearLayout(this);
-            ll_row.setOrientation(LinearLayout.HORIZONTAL);
-            ll_row.setGravity(Gravity.CENTER_HORIZONTAL);
-            ll_vert.addView(ll_row);
+            LinearLayout horizontalSquares = new LinearLayout(this);
+            horizontalSquares.setOrientation(LinearLayout.HORIZONTAL);
+            horizontalSquares.setGravity(Gravity.CENTER_HORIZONTAL);
+            verticalSquares.addView(horizontalSquares);
             for (int column = 0; column < game.getLevelWidth(); column++) {
                 ImageButton new_button = new ImageButton(this);
                 new_button.setTag(row + "_" + column);
-                ll_row.addView(new_button);
+                horizontalSquares.addView(new_button);
                 setColourShape(new_button, row, column, game.getEyeballColumn() == column && game.getEyeballRow() == row);
                 new_button.setOnClickListener(gameClickListener);
             }
@@ -178,15 +178,15 @@ public class GameActivity extends AppCompatActivity {
             case LEFT -> 270;
             case RIGHT -> 90;
         };
-        Bitmap bmpOriginal = BitmapFactory.decodeResource(this.getResources(), R.drawable.player);
-        Bitmap bmResult = Bitmap.createBitmap(bmpOriginal.getWidth(), bmpOriginal.getHeight(), Bitmap.Config.ARGB_8888);
-        Canvas tempCanvas = new Canvas(bmResult);
-        tempCanvas.rotate(rotation, (float) bmpOriginal.getWidth()/2, (float) bmpOriginal.getHeight()/2);
-        tempCanvas.drawBitmap(bmpOriginal, 0, 0, null);
-        Drawable finalDrawable = new BitmapDrawable(getResources(), bmResult);
-        if (!movingPlayer) finalDrawable.setColorFilter(getColor(R.color.orange), PorterDuff.Mode.MULTIPLY);
-        else finalDrawable.setColorFilter(getColor(R.color.highlight), PorterDuff.Mode.MULTIPLY);
-        return finalDrawable;
+        Bitmap playerBitmapInitial = BitmapFactory.decodeResource(this.getResources(), R.drawable.player);
+        Bitmap playerBitmap = Bitmap.createBitmap(playerBitmapInitial.getWidth(), playerBitmapInitial.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas rotationCanvas = new Canvas(playerBitmap);
+        rotationCanvas.rotate(rotation, (float) playerBitmapInitial.getWidth()/2, (float) playerBitmapInitial.getHeight()/2);
+        rotationCanvas.drawBitmap(playerBitmapInitial, 0, 0, null);
+        Drawable playerBitmapFinal = new BitmapDrawable(getResources(), playerBitmap);
+        if (!movingPlayer) playerBitmapFinal.setColorFilter(getColor(R.color.orange), PorterDuff.Mode.MULTIPLY);
+        else playerBitmapFinal.setColorFilter(getColor(R.color.highlight), PorterDuff.Mode.MULTIPLY);
+        return playerBitmapFinal;
     }
 
     View.OnClickListener gameClickListener = new View.OnClickListener() {
@@ -214,7 +214,7 @@ public class GameActivity extends AppCompatActivity {
                     setColourShape(previousButton, previousLocation.getRow(), previousLocation.getColumn() ,false);
                     processesMove(newRow, newColumn);
                     setColourShape((ImageButton) view, newRow, newColumn ,true);
-                    if (!hasLegalMoves()) {
+                    if (!hasLegalMoves() && game.getCompletedGoalCount() != goalTotal) {
                         onLoseDialog();
                     }
                 }
@@ -290,7 +290,6 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void playAudio(int audioTrack) {
-        Log.d(LOG_TAG, "Play Audio!" + audioTrack);
         mediaPlayer = MediaPlayer.create(this, audioTrack);
         mediaPlayer.start();
     }
@@ -327,6 +326,7 @@ public class GameActivity extends AppCompatActivity {
 
     protected void createGame(int levelNumber) {
         TextView levelBox = findViewById(R.id.levelText);
+        levelNumber = ((levelNumber - 1) % 3) + 1;
         switch(levelNumber) {
             case 2:
                 levelBox.setText(getString(R.string.levelMessage, 2));
@@ -366,21 +366,21 @@ public class GameActivity extends AppCompatActivity {
 
     private static void levelTwo(Game game) {
         game.addLevel(4, 3);
-        game.addSquare(new PlayableSquare(Color.BLUE, Shape.STAR), 0, 0);
-        game.addSquare(new PlayableSquare(Color.BLUE, Shape.DIAMOND), 0, 1);
+        game.addSquare(new PlayableSquare(Color.BLUE, Shape.DIAMOND), 0, 0);
+        game.addSquare(new PlayableSquare(Color.RED, Shape.FLOWER), 0, 1);
         game.addSquare(new PlayableSquare(Color.YELLOW, Shape.DIAMOND), 0, 2);
-        game.addSquare(new PlayableSquare(Color.RED, Shape.CROSS), 1, 0);
-        game.addSquare(new PlayableSquare(Color.GREEN, Shape.STAR), 1, 1);
-        game.addSquare(new PlayableSquare(Color.YELLOW, Shape.CROSS), 1, 2);
+        game.addSquare(new PlayableSquare(Color.RED, Shape.DIAMOND), 1, 0);
+        game.addSquare(new BlankSquare(), 1, 1);
+        game.addSquare(new PlayableSquare(Color.BLUE, Shape.CROSS), 1, 2);
         game.addSquare(new PlayableSquare(Color.RED, Shape.LIGHTNING), 2, 0);
-        game.addSquare(new PlayableSquare(Color.PURPLE, Shape.CROSS), 2, 1);
-        game.addSquare(new PlayableSquare(Color.PURPLE, Shape.LIGHTNING), 2, 2);
+        game.addSquare(new PlayableSquare(Color.RED, Shape.DIAMOND), 2, 1);
+        game.addSquare(new PlayableSquare(Color.YELLOW, Shape.LIGHTNING), 2, 2);
         game.addSquare(new BlankSquare(), 3, 0);
-        game.addSquare(new PlayableSquare(Color.BLUE, Shape.DIAMOND), 3, 1);
+        game.addSquare(new PlayableSquare(Color.PURPLE, Shape.DIAMOND), 3, 1);
         game.addSquare(new BlankSquare(), 3, 2);
 
-        game.addGoal(0, 2);
         game.addGoal(2, 0);
+        game.addGoal(2, 2);
 
         game.addEyeball(3, 1, Direction.UP);
     }
